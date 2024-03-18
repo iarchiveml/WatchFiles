@@ -154,13 +154,10 @@ struct ContentView: View {
                             Spacer()
                         }
                     }
-
-
                     
-                    Text(currentDirectory?.path ?? "")
+                    Text((currentDirectory?.standardizedFileURL.path ?? ""))
                         .font(.headline)
                         .padding(.bottom, 5)
-
                     
                     ForEach(folderItems + symlinkItems, id: \.self) { item in
                         Button(action: {
