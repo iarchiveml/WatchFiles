@@ -20,7 +20,6 @@ struct ContentView: View {
     @State private var isShowingURLInput = false
     @State private var userSpecifiedURL: String = ""
     @State private var isDownloading = false
-    @State private var showDeleteConfirmation = false
     @State private var deleteModeEnabled = false
     @State private var downloadComplete = true
     @State private var isFileMenuVisible = false
