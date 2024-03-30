@@ -111,7 +111,7 @@ struct ContentView: View {
 
                                     
                                     if !isURLInputEmpty {
-                                        downloadFileFromURL(urlString: userSpecifiedURL, progressHandler: { progress in
+                                        downloadFileFromURL(urlString: userSpecifiedURL, savedir: currentDirectory!, progressHandler: { progress in
                                         }) { success in
                                         }
                                     }
@@ -475,7 +475,7 @@ struct ContentView: View {
         }
     }
 
-    func downloadFileFromURL(urlString: String, progressHandler: ((Float) -> Void)? = nil, completionHandler: @escaping (Bool) -> Void) {
+    func downloadFileFromURL(urlString: String, savedir: URL, progressHandler: ((Float) -> Void)? = nil, completionHandler: @escaping (Bool) -> Void) {
         self.downloadComplete = false
         
         if urlString.isEmpty || urlString == "http://" || urlString == "https://" {
@@ -509,9 +509,8 @@ struct ContentView: View {
             }
 
             do {
-
                 let originalFileName = url.lastPathComponent
-                let destinationURL = currentDirectory!.appendingPathComponent(originalFileName)
+                let destinationURL = savedir.appendingPathComponent(originalFileName)
 
                 try FileManager.default.moveItem(at: tempURL, to: destinationURL)
 
@@ -522,7 +521,9 @@ struct ContentView: View {
                     self.downloadAlert = true
                     self.isURLInputEmpty = true
                     DispatchQueue.main.async {
-                        self.loadFiles(at: self.currentDirectory!)
+                        if savedir == currentDirectory {
+                            self.loadFiles(at: savedir)
+                        }
                     }
                 }
             } catch {
@@ -538,6 +539,7 @@ struct ContentView: View {
 
         downloadTask.resume()
     }
+
 
 
     private func deleteFile(_ fileURL: URL) {
