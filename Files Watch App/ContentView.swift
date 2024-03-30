@@ -63,7 +63,7 @@ struct ContentView: View {
                             isShowingURLInput.toggle()
 
                             
-                            if !isShowingURLInput {
+                            if !isURLInputEmpty {
                                 downloadFileFromURL(urlString: userSpecifiedURL, progressHandler: { progress in
                                 }) { success in
                                 }
