@@ -13,6 +13,8 @@ struct ContentView: View {
     @State private var showNoWriteAccessAlert = false
     @State private var showWriteAccessAlert = false
     @State private var downloadFail = false
+    @State private var isURLInputEmpty = true
+    @State private var invalidURL = true
     @State private var downloadAlert = false
     @State private var symlinkItems: [URL] = []
     @State private var isShowingURLInput = false
@@ -54,6 +56,7 @@ struct ContentView: View {
                     .background(Color.clear)
 
                     HStack {
+                        let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.standardized
                         Button(action: {
                             deleteModeEnabled = false
                             
@@ -66,11 +69,25 @@ struct ContentView: View {
                                 }
                             }
                         }) {
-                            Text(isShowingURLInput ? Image(systemName: "checkmark") : Image(systemName: "arrow.down.to.line.alt"))
-                                .foregroundColor(.white)
-                                .cornerRadius(8)
+                            if isShowingURLInput {
+                                if isURLInputEmpty {
+                                    Image(systemName: "xmark")
+                                        .foregroundColor(.white)
+                                        .cornerRadius(8)
+                                } else {
+                                    Image(systemName: "checkmark")
+                                        .foregroundColor(.white)
+                                        .cornerRadius(8)
+                                }
+                            } else {
+                                Image(systemName: "arrow.down.to.line.alt")
+                                    .foregroundColor(.white)
+                                    .cornerRadius(8)
+                            }
+                            
                         }
-
+                        .disabled(currentDirectory?.standardizedFileURL != documentsDirectory)
+                        .opacity(currentDirectory?.standardizedFileURL != documentsDirectory ? 0.6 : 1)
 
                         Button(action: {
                            
@@ -104,8 +121,14 @@ struct ContentView: View {
                             .cornerRadius(8)
                             .padding(.bottom)
                             .onAppear {
-                                
                                 userSpecifiedURL = "http://"
+                            }
+                            .onChange(of: userSpecifiedURL) { newValue in
+                                if newValue.isEmpty || newValue == "http://" || newValue == "https://" {
+                                    isURLInputEmpty = true
+                                } else {
+                                    isURLInputEmpty = false
+                                }
                             }
                     }
 
@@ -267,6 +290,14 @@ struct ContentView: View {
                             self.downloadFail = false
                         }
                     )
+                } else if self.invalidURL {
+                    return Alert(
+                        title: Text("Download error"),
+                        message: Text("Invalid URL."),
+                        dismissButton: .default(Text("OK")) {
+                            self.invalidURL = false
+                        }
+                    )
                 } else {
                     return Alert(title: Text(""))
                 }
@@ -365,15 +396,17 @@ struct ContentView: View {
     func downloadFileFromURL(urlString: String, progressHandler: ((Float) -> Void)? = nil, completionHandler: @escaping (Bool) -> Void) {
         self.downloadComplete = false
         
-        if urlString == "http://" || urlString == "https://" {
-            print("Received input is 'http://' or 'https://'. Doing nothing.")
+        if urlString.isEmpty || urlString == "http://" || urlString == "https://" {
+            print("Received input is empty or 'http://' or 'https://'. Doing nothing.")
             completionHandler(false)
             self.downloadComplete = true
+            self.isURLInputEmpty = true
             return
         }
 
         guard let url = URL(string: urlString) else {
             print("Invalid URL")
+            self.invalidURL = true
             completionHandler(false)
             return
         }
@@ -388,6 +421,7 @@ struct ContentView: View {
                 DispatchQueue.main.async {
                     self.downloadComplete = true
                     self.downloadFail = true
+                    self.isURLInputEmpty = true
                 }
                 return
             }
@@ -399,6 +433,7 @@ struct ContentView: View {
                     DispatchQueue.main.async {
                         self.downloadComplete = true
                         self.downloadFail = true
+                        self.isURLInputEmpty = true
                     }
                     return
                 }
@@ -413,6 +448,7 @@ struct ContentView: View {
                 DispatchQueue.main.async {
                     self.downloadComplete = true
                     self.downloadAlert = true
+                    self.isURLInputEmpty = true
                     guard let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
                         print("Failed to get documents directory")
                         return
@@ -427,6 +463,7 @@ struct ContentView: View {
                 DispatchQueue.main.async {
                     self.downloadComplete = true
                     self.downloadFail = true
+                    self.isURLInputEmpty = true
                 }
             }
         }
