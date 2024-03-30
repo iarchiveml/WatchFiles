@@ -111,7 +111,7 @@ struct ContentView: View {
 
                                     
                                     if !isURLInputEmpty {
-                                        downloadFileFromURL(urlString: userSpecifiedURL, savedir: currentDirectory!, progressHandler: { progress in
+                                        downloadFileFromURL(urlString: userSpecifiedURL, savedir: currentDirectory!.standardizedFileURL, progressHandler: { progress in
                                         }) { success in
                                         }
                                     }
@@ -521,8 +521,8 @@ struct ContentView: View {
                     self.downloadAlert = true
                     self.isURLInputEmpty = true
                     DispatchQueue.main.async {
-                        if savedir == currentDirectory {
-                            self.loadFiles(at: savedir)
+                        if savedir.standardizedFileURL == currentDirectory!.standardizedFileURL {
+                            self.loadFiles(at: savedir.standardizedFileURL)
                         }
                     }
                 }
