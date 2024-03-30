@@ -35,6 +35,7 @@ struct ContentView: View {
                     HStack {
                         Button(action: {
                             deleteModeEnabled = false
+                            isShowingURLInput = false
                             loadFiles(at: URL(fileURLWithPath: "/"))
                         }) {
                             Text("/")
@@ -43,6 +44,7 @@ struct ContentView: View {
 
                         Button(action: {
                             deleteModeEnabled = false
+                            isShowingURLInput = false
                             if let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
                                 let parentDirectory = documentsDirectory.deletingLastPathComponent()
                                 loadFiles(at: parentDirectory)
@@ -139,6 +141,7 @@ struct ContentView: View {
                             if let directory = currentDirectory, directory != URL(fileURLWithPath: "/") {
                                 loadFiles(at: directory.deletingLastPathComponent())
                                 deleteModeEnabled = false
+                                isShowingURLInput = false
                             }
                         }) {
                             Image(systemName: "chevron.left")
@@ -156,6 +159,7 @@ struct ContentView: View {
 
                         Button(action: {
                             deleteModeEnabled.toggle()
+                            isShowingURLInput = false
                         }) {
                             Text(deleteModeEnabled ? Image(systemName: "trash.slash") : Image(systemName: "trash")).foregroundColor(.red)
                         }
