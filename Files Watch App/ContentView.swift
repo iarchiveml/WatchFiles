@@ -284,7 +284,8 @@ struct ContentView: View {
                         }) {
                             Text(item.lastPathComponent)
                                 .font(.body)
-                                .foregroundColor(Color.blue.opacity(0.7))
+                                .foregroundColor(Color.blue.opacity(0.8))
+                                .lineLimit(1)
                         }
                         .background(
                             deleteModeEnabled && fileIsInDocumentsFolder(item)
@@ -312,6 +313,7 @@ struct ContentView: View {
                             Text(file.lastPathComponent)
                                 .font(.body)
                                 .foregroundColor(.white)
+                                .lineLimit(1)
                         }
                         .background(
                             deleteModeEnabled && fileIsInDocumentsFolder(file)
