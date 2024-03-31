@@ -14,7 +14,7 @@ struct ContentView: View {
     @State private var showWriteAccessAlert = false
     @State private var downloadFail = false
     @State private var isURLInputEmpty = true
-    @State private var invalidURL = true
+    @State private var invalidURL = false
     @State private var downloadAlert = false
     @State private var symlinkItems: [URL] = []
     @State private var isShowingURLInput = false
@@ -26,6 +26,7 @@ struct ContentView: View {
     @State private var isShowingFolderNameInput = false
     @State private var isFolderNameInputEmpty = true
     @State private var FolderName: String = ""
+    @State private var folderCreated = false
 
     @FocusState private var isDownloadTextFieldFocused: Bool
 
@@ -95,12 +96,11 @@ struct ContentView: View {
                                             .foregroundColor(.white)
                                             .padding(8)
                                     }
-                                    
-
+                                    .frame(height: 50)
                     }
                     
                     if isFileMenuVisible {
-                        VStack {
+                        VStack(alignment: .leading) {
                             HStack {
                                 Button(action: {
                                     deleteModeEnabled = false
@@ -109,7 +109,7 @@ struct ContentView: View {
                                     isShowingURLInput.toggle()
 
                                     
-                                    if !isURLInputEmpty {
+                                    if !isURLInputEmpty && !isShowingURLInput {
                                         downloadFileFromURL(urlString: userSpecifiedURL, savedir: currentDirectory!.standardizedFileURL, progressHandler: { progress in
                                         }) { success in
                                         }
@@ -330,7 +330,7 @@ struct ContentView: View {
                 loadFiles(at: URL(fileURLWithPath: "/"))
             }
             .alert(isPresented: Binding<Bool>(
-                get: { self.binaryFileError || self.showErrorPopup || self.showNoWriteAccessAlert || self.showWriteAccessAlert || self.fileDeleted || self.downloadAlert || self.downloadFail },
+                get: { self.binaryFileError || self.showErrorPopup || self.showNoWriteAccessAlert || self.showWriteAccessAlert || self.fileDeleted || self.downloadAlert || self.downloadFail || self.invalidURL || self.folderCreated },
                 set: { _ in }
             )) {
                 if self.binaryFileError {
@@ -391,10 +391,18 @@ struct ContentView: View {
                     )
                 } else if self.invalidURL {
                     return Alert(
-                        title: Text("Download error"),
-                        message: Text("Invalid URL."),
+                        title: Text("Invalid URL"),
+                        message: Text("The specified URL is not valid."),
                         dismissButton: .default(Text("OK")) {
                             self.invalidURL = false
+                        }
+                    )
+                } else if self.folderCreated {
+                    return Alert(
+                        title: Text("Folder created"),
+                        message: Text("A folder was created with the specified name."),
+                        dismissButton: .default(Text("OK")) {
+                            self.folderCreated = false
                         }
                     )
                 } else {
@@ -487,9 +495,10 @@ struct ContentView: View {
             return
         }
 
-        guard let url = URL(string: urlString) else {
+        guard let url = URL(string: urlString), url.scheme != nil else {
             print("Invalid URL")
             self.invalidURL = true
+            self.downloadComplete = true
             completionHandler(false)
             return
         }
@@ -541,8 +550,6 @@ struct ContentView: View {
         downloadTask.resume()
     }
 
-
-
     private func deleteFile(_ fileURL: URL) {
         do {
             let resourceValues = try fileURL.resourceValues(forKeys: [.isDirectoryKey])
@@ -570,7 +577,8 @@ struct ContentView: View {
         }
         return fileURL.path.contains(documentsDirectory.path)
     }
-    private func createFolder(folderName: String, inDirectory currentDirectory: URL) {
+    
+    func createFolder(folderName: String, inDirectory currentDirectory: URL) {
         let newFolderURL = currentDirectory.appendingPathComponent(folderName)
         
         if FileManager.default.fileExists(atPath: newFolderURL.path) {
@@ -581,11 +589,13 @@ struct ContentView: View {
         do {
             try FileManager.default.createDirectory(at: newFolderURL, withIntermediateDirectories: true, attributes: nil)
             print("Folder created successfully at \(newFolderURL.path)")
+            self.folderCreated = true
             self.loadFiles(at: self.currentDirectory!)
         } catch {
             print("Error creating folder: \(error.localizedDescription)")
         }
     }
+    
     private func isCurrentDirectoryInDocuments(currentDirectory: URL?) -> Bool {
         guard let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.standardizedFileURL,
               let currentDirectoryURL = currentDirectory?.standardizedFileURL else {
