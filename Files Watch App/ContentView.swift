@@ -27,6 +27,10 @@ struct ContentView: View {
     @State private var isFolderNameInputEmpty = true
     @State private var FolderName: String = ""
     @State private var folderCreated = false
+    @State private var folderExists = false
+    @State private var folderError = false
+    @State private var deleteError = false
+    @State private var readError = false
 
     @FocusState private var isDownloadTextFieldFocused: Bool
 
@@ -188,7 +192,7 @@ struct ContentView: View {
                                     isShowingFolderNameInput.toggle()
 
                                     
-                                    if !isFolderNameInputEmpty {
+                                    if !isFolderNameInputEmpty && !isShowingFolderNameInput {
                                         createFolder(folderName: FolderName, inDirectory: currentDirectory!.standardizedFileURL)
                                     }
                                 }) {
@@ -330,7 +334,7 @@ struct ContentView: View {
                 loadFiles(at: URL(fileURLWithPath: "/"))
             }
             .alert(isPresented: Binding<Bool>(
-                get: { self.binaryFileError || self.showErrorPopup || self.showNoWriteAccessAlert || self.showWriteAccessAlert || self.fileDeleted || self.downloadAlert || self.downloadFail || self.invalidURL || self.folderCreated },
+                get: { self.binaryFileError || self.showErrorPopup || self.showNoWriteAccessAlert || self.showWriteAccessAlert || self.fileDeleted || self.downloadAlert || self.downloadFail || self.invalidURL || self.folderCreated || self.folderExists || self.folderError || self.deleteError || self.readError },
                 set: { _ in }
             )) {
                 if self.binaryFileError {
@@ -397,12 +401,44 @@ struct ContentView: View {
                             self.invalidURL = false
                         }
                     )
+                } else if self.folderError {
+                    return Alert(
+                        title: Text("Error"),
+                        message: Text("Folder creation failed due to an error."),
+                        dismissButton: .default(Text("OK")) {
+                            self.folderError = false
+                        }
+                    )
+                } else if self.folderExists {
+                    return Alert(
+                        title: Text("Folder not created"),
+                        message: Text("A folder already exists with the specified name."),
+                        dismissButton: .default(Text("OK")) {
+                            self.folderExists = false
+                        }
+                    )
                 } else if self.folderCreated {
                     return Alert(
                         title: Text("Folder created"),
                         message: Text("A folder was created with the specified name."),
                         dismissButton: .default(Text("OK")) {
                             self.folderCreated = false
+                        }
+                    )
+                } else if self.deleteError {
+                    return Alert(
+                        title: Text("Error"),
+                        message: Text("Item deletion failed due to an error."),
+                        dismissButton: .default(Text("OK")) {
+                            self.deleteError = false
+                        }
+                    )
+                } else if self.readError {
+                    return Alert(
+                        title: Text("Error"),
+                        message: Text("The file could not be read due to an error."),
+                        dismissButton: .default(Text("OK")) {
+                            self.readError = false
                         }
                     )
                 } else {
@@ -481,6 +517,7 @@ struct ContentView: View {
             }
         } catch {
             print("Error reading file: \(error.localizedDescription)")
+            self.readError = true
         }
     }
 
@@ -564,9 +601,11 @@ struct ContentView: View {
                 print("Item deleted successfully")
             } else {
                 print("Unable to determine if the item is a directory.")
+                self.deleteError = true
             }
         } catch {
             print("Error deleting item at \(fileURL.path): \(error.localizedDescription)")
+            self.deleteError = true
         }
     }
 
@@ -583,6 +622,7 @@ struct ContentView: View {
         
         if FileManager.default.fileExists(atPath: newFolderURL.path) {
             print("Folder already exists.")
+            self.folderExists = true
             return
         }
         
@@ -593,6 +633,7 @@ struct ContentView: View {
             self.loadFiles(at: self.currentDirectory!)
         } catch {
             print("Error creating folder: \(error.localizedDescription)")
+            self.folderError = true
         }
     }
     
